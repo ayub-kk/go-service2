@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: go-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-service-config
+  namespace: go-service
+data:
+  REDIS_ADDR: "redis-service:6379"
+  PORT: "8080"

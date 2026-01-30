@@ -1,0 +1,46 @@
+groups:
+  - name: go-service-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: go-service
+        annotations:
+          summary: "Высокий уровень ошибок в {{ $labels.instance }}"
+          description: "Уровень 5xx ошибок составляет {{ $value | humanizePercentage }} за последние 5 минут"
+          runbook_url: "http://wiki/runbook/high-error-rate"
+
+      - alert: ServiceDown
+        expr: up{job="go-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: go-service
+        annotations:
+          summary: "Сервис {{ $labels.instance }} недоступен"
+          description: "Сервис не отвечает более 1 минуты"
+          runbook_url: "http://wiki/runbook/service-down"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: go-service
+        annotations:
+          summary: "Высокая задержка в {{ $labels.instance }}"
+          description: "95-й перцентиль задержки составляет {{ $value }} секунд"
+          runbook_url: "http://wiki/runbook/high-latency"
+
+      - alert: TooManyAnomalies
+        expr: rate(anomalies_detected_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: go-service
+        annotations:
+          summary: "Обнаружено много аномалий"
+          description: "Скорость обнаружения аномалий: {{ $value }} в секунду"
+          runbook_url: "http://wiki/runbook/anomalies-detected"

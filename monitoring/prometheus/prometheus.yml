@@ -1,0 +1,63 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'development'
+    cluster: 'local'
+
+# Правила для алертов
+rule_files:
+  - "alerts.yml"
+
+# Конфигурация Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Настройки сбора метрик
+scrape_configs:
+  # Job для вашего Go сервиса
+  - job_name: 'go-service'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: '/metrics/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8080']  # Для Docker Desktop на Windows
+        labels:
+          service: 'go-service'
+          environment: 'development'
+          namespace: 'default'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+  # Job для Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['host.docker.internal:6379']
+        labels:
+          service: 'redis'
+          environment: 'development'
+    metrics_path: '/'
+    params:
+      format: [prometheus]
+
+  # Job для Node Exporter (метрики хоста)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+        labels:
+          service: 'node-exporter'
+          environment: 'development'
+
+  # Prometheus сам по себе
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          environment: 'development'
